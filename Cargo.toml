@@ -1,0 +1,17 @@
+[package]
+name = "rusterizer"
+version = "0.1.0"
+authors = [
+  "s3rius <win10@list.ru>",
+  "Kolaer <overlordin777@gmail.com>",
+  "ussr-jesus <groundhog448@gmail.com>"
+]
+edition = "2018"
+
+[dependencies]
+image = "0.21" # https://docs.rs/image/0.21.0/image/
+nom = "^4.2" # https://docs.rs/nom/4.2.0/nom/
+
+[dev-dependencies]
+quickcheck = "0.8" # https://docs.rs/quickcheck/0.8.1/quickcheck/
+quickcheck_macros = "0.8" # https://docs.rs/quickcheck_macros/0.8.0/quickcheck_macros/

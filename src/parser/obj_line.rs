@@ -45,8 +45,15 @@ impl Obj {
 }
 
 named!(
-    comment,
+    comment<&str, &str>,
     delimited!(tag!("#"), take_until!("\n"), alt!(eof!() | eol))
+);
+
+named!(comment_line<&str, ObjLine>,
+    do_parse!(
+        comm: comment >>
+        (ObjLine::Comment(comm.to_string()))
+    )
 );
 
 named!(pub parse_vertex<&str, ObjLine>,
@@ -63,7 +70,7 @@ named!(pub parse_vertex<&str, ObjLine>,
     )
 );
 
-named!(pub end_of_line, alt!(
+named!(pub end_of_line<&str, &str>, alt!(
     eof!()|eol|comment
 ));
 
@@ -106,5 +113,6 @@ named!(pub face_pair< &str, FaceIndex >, map!(
 named!(pub parse_obj_line<&str, ObjLine>, alt!(
     parse_obj_name      |
     parse_vertex_normal |
+    comment_line        |
     parse_vertex
 ));

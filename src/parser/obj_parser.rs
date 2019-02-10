@@ -32,10 +32,10 @@ impl Iterator for ObjParser {
             Ok(len) => {
                 if len > 0 {
                     let result = parse_obj_line(&line);
-                    println!("{:#?}", result);
                     match result {
                         Result::Ok(v) => Some(v.1),
                         Result::Err(e) => {
+                            println!("{:#?}", e);
                             if e.is_incomplete() {
                                 self.next()
                             } else {

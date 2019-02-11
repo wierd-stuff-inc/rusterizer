@@ -11,7 +11,7 @@ pub struct PPMImage {
     width: u32,
     height: u32,
 }
-
+#[allow(dead_code)]
 impl PPMImage {
     pub fn new(width: u32, height: u32) -> PPMImage {
         PPMImage {
@@ -22,19 +22,28 @@ impl PPMImage {
     }
 
     pub fn write_to_file(&self, filename: &str) {
-        let file = File::create(filename).unwrap();
+        let file = File::create(filename).expect("Can't open file.");
         let mut buffer = BufWriter::new(file);
-        write!(buffer, "P3\n{} {}\n255\n", self.width, self.height);
+        buffer
+            .write_fmt(format_args!("P3\n{} {}\n255\n", self.width, self.height))
+            .expect("Can't write to file.");
+        // write!(buffer, );
         for i in 0..self.height {
             for j in 0..self.width {
                 if j > 0 {
-                    write!(buffer, " ");
+                    buffer
+                        .write_all(" ".as_bytes())
+                        .expect("Can't write to file.");
                 }
                 let id = j + (self.height - i - 1) * self.width;
                 let (r, g, b) = self.data[id as usize];
-                write!(buffer, "{} {} {}", r, g, b);
+                buffer
+                    .write_fmt(format_args!("{} {} {}", r, g, b))
+                    .expect("Can't write to file.");
             }
-            write!(buffer, "\n");
+            buffer
+                .write_all("\n".as_bytes())
+                .expect("Can't write to file.");
         }
     }
 

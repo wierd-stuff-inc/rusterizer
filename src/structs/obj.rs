@@ -7,6 +7,7 @@ pub struct Obj {
     pub objects: Vec<ObjObject>,
 }
 
+#[allow(dead_code)]
 impl Obj {
     pub fn create(filename: &str) -> Self {
         let mut obj = Obj {
@@ -51,7 +52,7 @@ pub struct ObjObject {
     vertex_params: Vec<ObjLine>,
     faces: Vec<ObjLine>,
 }
-
+#[allow(dead_code)]
 impl ObjObject {
     pub fn new() -> Self {
         ObjObject {

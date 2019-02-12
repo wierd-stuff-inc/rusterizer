@@ -44,14 +44,6 @@ pub enum ObjLine {
 //     }
 // }
 
-macro_rules! sp (
-   ($i:expr, $($args:tt)*) => (
-     {
-       sep!($i, space, $($args)*)
-     }
-   )
-);
-
 #[macro_export]
 macro_rules! def_string_line (
    ($id:ident, $i:expr, $tt:tt, $ty:ident) => (

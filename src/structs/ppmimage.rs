@@ -16,8 +16,8 @@ impl PPMImage {
     pub fn new(width: u32, height: u32) -> PPMImage {
         PPMImage {
             data: vec![(0, 0, 0); (width * height) as usize],
-            width: width,
-            height: height,
+            width,
+            height,
         }
     }
 
@@ -32,7 +32,7 @@ impl PPMImage {
             for j in 0..self.width {
                 if j > 0 {
                     buffer
-                        .write_all(" ".as_bytes())
+                        .write_all(b" ")
                         .expect("Can't write to file.");
                 }
                 let id = j + (self.height - i - 1) * self.width;
@@ -42,7 +42,7 @@ impl PPMImage {
                     .expect("Can't write to file.");
             }
             buffer
-                .write_all("\n".as_bytes())
+                .write_all(b"\n")
                 .expect("Can't write to file.");
         }
     }

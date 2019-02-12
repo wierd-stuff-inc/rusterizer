@@ -15,7 +15,7 @@ impl Arbitrary for Vec3f {
         let x = f32::arbitrary(g);
         let y = f32::arbitrary(g);
         let z = f32::arbitrary(g);
-        Vec3f{x, y, z}
+        Vec3f { x, y, z }
     }
 }
 
@@ -62,19 +62,20 @@ impl Vec3f {
 
     pub fn magnitude(&self) -> f32 {
         let res = self.dot(&*self).sqrt();
-        assert!(res + 1e-15 >= 0.0);
+        debug_assert!(res + 1e-5 >= 0.0);
         res
     }
 
     pub fn squared_magnitude(&self) -> f32 {
         let res = self.dot(&*self);
-        assert!(res + 1e-15 >= 0.0);
+        debug_assert!(res + 1e-5 >= 0.0);
         res
     }
 
     pub fn normalized(&self) -> Vec3f {
         let length = self.magnitude();
         let res = Vec3f::new(self.x / length, self.y / length, self.z / length);
+        debug_assert!((res.squared_magnitude() - 1.0).abs() <= 1e-5);
         res
     }
 

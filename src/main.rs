@@ -21,7 +21,7 @@ fn main() {
     const WIDTH: u32 = 1920;
     const HEIGHT: u32 = 1080;
     let obj = Obj::create("suzan.obj");
-    // println!("{:#?}", obj);
+    println!("{:#?}", obj);
     let img = PPMImage::new(WIDTH, HEIGHT);
     // let suzan = parser::obj::parse_obj_file("suzan.obj");
     // println!("{:#?}", suzan);

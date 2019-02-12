@@ -74,8 +74,8 @@ impl ObjObject {
 
     pub fn material(&self) -> Option<String> {
         match &self.material {
-            &Some(ref value) => Some(value.clone()),
-            &None => None,
+            Some(ref value) => Some(value.clone()),
+            None => None,
         }
     }
     pub fn name(&self) -> &Option<String> {

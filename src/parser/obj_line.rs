@@ -127,28 +127,28 @@ named!(pub face_pair< &str, FaceIndex >, map!(
     separated_pair!(
         my_u32,
         tag!("/"),
-        opt!(my_u32)
+        my_u32
     ),
-    |(v,vt)| FaceIndex(v, vt, None)
+    |(v,vt)| FaceIndex(v, Some(vt), None)
 ));
 
 named!( face_triple< &str, FaceIndex >, map!(
     tuple!(
         my_u32,
         delimited!(tag!("/"), opt!(my_u32), tag!("/")),
-        opt!(my_u32)
+        my_u32
     ),
-    |(v, vt, vn)| FaceIndex(v, vt, vn)
+    |(v, vt, vn)| FaceIndex(v, vt, Some(vn))
 ));
 
 named!(face_line<&str, ObjLine>, dbg_dmp!(delimited!(
-        sp!(tag!("f")),
+        ws!(tag!("f")),
         alt!(
-            separated_list!(space, face_pair) => {|vec| ObjLine::Face(vec)}
+            separated_nonempty_list_complete!(space, face_pair) => {|vec| ObjLine::Face(vec)}
             |
-            separated_list!(space, face_triple) =>  {|vec| ObjLine::Face(vec)}
+            separated_nonempty_list_complete!(space, face_triple) =>  {|vec| ObjLine::Face(vec)}
             |
-            separated_list!(space, my_u32) => {|vec: Vec<u32>| {
+            separated_nonempty_list!(space, my_u32) => {|vec: Vec<u32>| {
                  ObjLine::Face(vec.iter().map(|&v| FaceIndex(v, None, None)).collect::<Vec<_>>())
              }
          }

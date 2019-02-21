@@ -1,6 +1,6 @@
 use crate::parser::obj_line::*;
 use crate::parser::ObjParser;
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Obj {
     pub filename: String,
     pub comments: Vec<ObjLine>,
@@ -42,7 +42,7 @@ impl Obj {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ObjObject {
     pub name: Option<String>,
     pub material: Option<String>,

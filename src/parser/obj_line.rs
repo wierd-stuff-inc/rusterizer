@@ -1,26 +1,16 @@
 use crate::parser::obj_line::ObjLine::TextureUVW;
-use crate::structs::types::Point;
-use crate::vec3f::Vec3f;
+use crate::structs::types::Vec3f;
 use nom::eol;
 use nom::float;
-use nom::float_s;
 use nom::line_ending;
 use nom::space;
 use std::str::FromStr;
 use std::string::String;
 
-// #[allow(dead_code)]
-// #[derive(Debug)]
-// pub struct Obj {
-//     pub name: String,
-//     pub vertexes: Vec<Point>,
-//     pub normals: Vec<Point>,
-// }
-
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone)]
 pub struct FaceIndex(pub u32, pub Option<u32>, pub Option<u32>);
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone)]
 pub enum ObjLine {
     Comment(String),
     ObjectName(String),
@@ -62,11 +52,11 @@ named!(pub parse_vertex<&str, ObjLine>,
     do_parse!(
         tag!("v") >>
         space >>
-        x: float_s >>
+        x: float >>
         space >>
-        y: float_s >>
+        y: float >>
         space >>
-        z: float_s >>
+        z: float >>
         line_ending >>
         (ObjLine::Vertex(Vec3f::new(x, y, z)))
     )
@@ -106,9 +96,9 @@ named!(pub parse_vertex_texture<&str, ObjLine>,
 
 named!(vertex_texture< &str, (f32, f32, Option<f32>) >, map!(
     tuple!(
-        float_s,
-        float_s,
-        opt!(float_s)
+        float,
+        float,
+        opt!(float)
     ),
     |(v, vt, vn)| (v, vt, vn)
 ));

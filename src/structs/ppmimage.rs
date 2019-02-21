@@ -1,9 +1,9 @@
 use crate::structs::types::Color;
 use crate::structs::types::Point;
 
-use crate::structs::types::Vec3i;
+use crate::structs::types::Vec3f;
 use std::fs::File;
-use std::i32;
+use std::f64;
 use std::io::prelude::*;
 use std::io::BufWriter;
 use std::mem::swap;
@@ -61,8 +61,8 @@ impl PPMImage {
     pub fn draw_line(&mut self, start: Point, end: Point, color: Color) {
         let mut steep = false;
 
-        let (mut x0, mut y0) = (start.x, start.y);
-        let (mut x1, mut y1) = (end.x, end.y);
+        let (mut x0, mut y0) = (start.x as i32, start.y as i32);
+        let (mut x1, mut y1) = (end.x as i32, end.y as i32);
 
         if (x0 - x1).abs() < (y0 - y1).abs() {
             swap(&mut x0, &mut y0);
@@ -96,32 +96,32 @@ impl PPMImage {
     }
 
     pub fn draw_triangle(&mut self, p0: Point, p1: Point, p2: Point, color: Color) {
-        let a = Vec3i::new(p0.x, p0.y, 0);
-        let b = Vec3i::new(p1.x, p1.y, 0);
-        let c = Vec3i::new(p2.x, p2.y, 0);
+        let a = Vec3f::new(p0.x, p0.y, 0.);
+        let b = Vec3f::new(p1.x, p1.y, 0.);
+        let c = Vec3f::new(p2.x, p2.y, 0.);
         let xs = vec![a.x, b.x, c.x];
         let ys = vec![a.y, b.y, c.y];
-        let y_min = ys.iter().cloned().fold(i32::MAX, i32::min);
-        let y_max = ys.iter().cloned().fold(i32::MIN, i32::max);
-        let x_min = xs.iter().cloned().fold(i32::MAX, i32::min);
-        let x_max = xs.iter().cloned().fold(i32::MIN, i32::max);
+        let y_min = ys.iter().cloned().fold(f64::MAX, f64::min).floor() as i32;
+        let y_max = ys.iter().cloned().fold(f64::MIN, f64::max).ceil() as i32;
+        let x_min = xs.iter().cloned().fold(f64::MAX, f64::min).floor() as i32;
+        let x_max = xs.iter().cloned().fold(f64::MIN, f64::max).ceil() as i32;
         let v0 = b - a;
         let v1 = c - a;
         for y in y_min..=y_max {
+            let y = f64::from(y);
             for x in x_min..=x_max {
-                let p = Vec3i::new(x, y, 0);
+                let x = f64::from(x);
+                let p = Vec3f::new(x, y, 0.);
                 let v2 = p - a;
-                let d00 = v0.dot(&v0) as f32;
-                let d01 = v0.dot(&v1) as f32;
-                let d11 = v1.dot(&v1) as f32;
-                let d20 = v2.dot(&v0) as f32;
-                let d21 = v2.dot(&v1) as f32;
+                let d00 = v0.dot(&v0) as f64;
+                let d01 = v0.dot(&v1) as f64;
+                let d11 = v1.dot(&v1) as f64;
+                let d20 = v2.dot(&v0) as f64;
+                let d21 = v2.dot(&v1) as f64;
                 let denom = d00 * d11 - d01 * d01;
                 let v = (d11 * d20 - d01 * d21) / denom;
                 let w = (d00 * d21 - d01 * d20) / denom;
-                let u = 1.0 - v - w;
-                // println!("v = {:?}, w = {:?}, u = {:?};", v, w, u);
-                // assert_eq!(v + w + u < 1. + 1e-6, true);
+                let u = 1. - v - w;
                 if u > 0. && w > 0. && v > 0.{
                     self.set_pixel(x as u32, y as u32, color);
                 }

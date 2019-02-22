@@ -1,25 +1,16 @@
-use crate::structs::types::Point;
-use crate::vec3f::Vec3f;
+use crate::parser::obj_line::ObjLine::TextureUVW;
+use crate::structs::types::Vec3f;
 use nom::eol;
 use nom::float;
-use nom::float_s;
 use nom::line_ending;
 use nom::space;
 use std::str::FromStr;
 use std::string::String;
 
-// #[allow(dead_code)]
-// #[derive(Debug)]
-// pub struct Obj {
-//     pub name: String,
-//     pub vertexes: Vec<Point>,
-//     pub normals: Vec<Point>,
-// }
-
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone)]
 pub struct FaceIndex(pub u32, pub Option<u32>, pub Option<u32>);
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone)]
 pub enum ObjLine {
     Comment(String),
     ObjectName(String),
@@ -32,25 +23,8 @@ pub enum ObjLine {
     Normal(Vec3f),
     Face(Vec<FaceIndex>),
     TextureUVW(f32, f32, Option<f32>),
+    End(String),
 }
-
-// impl Obj {
-//     fn new(name: String) -> Obj {
-//         Obj {
-//             name: name,
-//             vertexes: Vec::new(),
-//             normals: Vec::new(),
-//         }
-//     }
-// }
-
-macro_rules! sp (
-   ($i:expr, $($args:tt)*) => (
-     {
-       sep!($i, space, $($args)*)
-     }
-   )
-);
 
 #[macro_export]
 macro_rules! def_string_line (
@@ -78,11 +52,11 @@ named!(pub parse_vertex<&str, ObjLine>,
     do_parse!(
         tag!("v") >>
         space >>
-        x: float_s >>
+        x: float >>
         space >>
-        y: float_s >>
+        y: float >>
         space >>
-        z: float_s >>
+        z: float >>
         line_ending >>
         (ObjLine::Vertex(Vec3f::new(x, y, z)))
     )
@@ -106,18 +80,33 @@ named!(pub parse_vertex_normal<&str, ObjLine>,
     )
 );
 
+named!(pub parse_vertex_texture<&str, ObjLine>,
+    dbg_dmp!(do_parse!(
+    tag!("vt") >>
+    space >>
+    uvw: tuple!(
+        float,
+        space,
+        float,
+        opt!(preceded!(space, float))
+    ) >>
+    end_of_line >>
+    (TextureUVW(uvw.0 ,uvw.2, uvw.3))
+)));
+
+named!(vertex_texture< &str, (f32, f32, Option<f32>) >, map!(
+    tuple!(
+        float,
+        float,
+        opt!(float)
+    ),
+    |(v, vt, vn)| (v, vt, vn)
+));
+
 def_string_line!(s_line, "s", ObjLine, SmoothShading);
 def_string_line!(usemtl_line, "usemtl", ObjLine, UseMtl);
 def_string_line!(parse_obj_name, "o", ObjLine, ObjectName);
-
-// named!(pub usemtl_line<&str, ObjLine>,
-//     do_parse!(
-//         tag!("usemtl") >>
-//         space >>
-//         name: complete!(nom::alpha)>>
-//         (ObjLine::UseMtl(name.to_string()))
-//     )
-// );
+def_string_line!(parse_group_name, "g", ObjLine, GroupName);
 
 named!(my_u32(&str) -> u32,
     map_res!(recognize!(nom::digit), u32::from_str)
@@ -136,39 +125,37 @@ named!( face_triple< &str, FaceIndex >, map!(
     tuple!(
         my_u32,
         delimited!(tag!("/"), opt!(my_u32), tag!("/")),
-        opt!(my_u32)
+        my_u32
     ),
-    |(v, vt, vn)| FaceIndex(v, vt, vn)
+    |(v, vt, vn)| FaceIndex(v, vt, Some(vn))
 ));
 
-named!(face_line<&str, ObjLine>, dbg_dmp!(delimited!(
-        sp!(tag!("f")),
-        alt!(
-            separated_list!(space, face_pair) => {|vec| ObjLine::Face(vec)}
-            |
-            separated_list!(space, face_triple) =>  {|vec| ObjLine::Face(vec)}
-            |
-            separated_list!(space, my_u32) => {|vec: Vec<u32>| {
-                 ObjLine::Face(vec.iter().map(|&v| FaceIndex(v, None, None)).collect::<Vec<_>>())
-             }
-         }
-        ),
-        end_of_line
-    ))
+named!(faces_pair_list<&str, ObjLine>,
+    dbg!(map!(separated_nonempty_list!(space, face_pair), |vec| ObjLine::Face(vec)))
 );
 
-// named!(face_line<&str, ObjLine>, dbg!(do_parse!(
-//     tag!("f")>>
-//     list : alt!(
-//         separated_list!(space, my_u32) => {|vec: Vec<u32>| vec.iter().map(|&v| FaceIndex(v, None, None)).collect::<Vec<_>>()}
-//         |
-//         separated_list!(space, face_pair) => {|vec| vec}
-//         |
-//         separated_list!(space, face_triple) =>  {|vec| vec}
-//     )>>
-//     end_of_line >>
-//     (ObjLine::Face(list))
-// )));
+named!(faces_triple_list<&str, ObjLine>,
+    dbg!(map!(separated_nonempty_list!(space, face_triple), |vec| ObjLine::Face(vec)))
+);
+
+named!(faces_uint_list<&str, ObjLine>,
+    map!(separated_nonempty_list!(space, my_u32), |vec: Vec<u32>| {
+         ObjLine::Face(vec.iter().map(|&v| FaceIndex(v, None, None)).collect::<Vec<_>>())
+     })
+);
+
+named!(pub face_line<&str, ObjLine>,
+        do_parse!(
+            ws!(tag!("f")) >>
+            list: alt!(
+                faces_triple_list
+                | faces_pair_list
+                | faces_uint_list
+            ) >>
+            end_of_line >>
+            (list)
+        )
+);
 
 named!(pub mtl_lib<&str, ObjLine>,
     do_parse!(
@@ -176,6 +163,13 @@ named!(pub mtl_lib<&str, ObjLine>,
         space >>
         lib: complete!(nom::alpha)>>
         (ObjLine::MtlLib(lib.to_string()))
+    )
+);
+
+named!(pub obj_end<&str, ObjLine>,
+    do_parse!(
+        end: end_of_line>>
+        (ObjLine::End(end.to_string()))
     )
 );
 
@@ -187,5 +181,8 @@ named!(pub parse_obj_line<&str, ObjLine>, alt!(
     | usemtl_line
     | s_line
     | mtl_lib
+    | parse_group_name
+    | obj_end
     | face_line
+    | parse_vertex_texture
 ));

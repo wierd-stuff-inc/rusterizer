@@ -12,7 +12,7 @@ impl ObjParser {
         let reader = BufReader::new(File::open(filename).expect("Unable to open file"));
         ObjParser {
             filename: filename.to_string(),
-            reader: reader,
+            reader,
         }
     }
 

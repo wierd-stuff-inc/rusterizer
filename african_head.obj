@@ -9,7 +9,7 @@
 # Faces: 2492
 #
 ####
-# mtllib ./african_head1.obj.mtl
+mtllib ./african_head1.obj.mtl
 
 vn 0.001000 0.482072 -0.876131
 v -0.000582 -0.734665 -0.623267

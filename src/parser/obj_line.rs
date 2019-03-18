@@ -1,7 +1,7 @@
 use crate::parser::obj_line::ObjLine::TextureUVW;
 use crate::structs::types::Vec3f;
-use nom::eol;
 use nom::double;
+use nom::eol;
 use nom::line_ending;
 use nom::space;
 use std::str::FromStr;
@@ -105,6 +105,7 @@ named!(vertex_texture< &str, (f64, f64, Option<f64>) >, map!(
 
 def_string_line!(s_line, "s", ObjLine, SmoothShading);
 def_string_line!(usemtl_line, "usemtl", ObjLine, UseMtl);
+def_string_line!(mtl_lib, "mtllib", ObjLine, MtlLib);
 def_string_line!(parse_obj_name, "o", ObjLine, ObjectName);
 def_string_line!(parse_group_name, "g", ObjLine, GroupName);
 
@@ -155,15 +156,6 @@ named!(pub face_line<&str, ObjLine>,
             end_of_line >>
             (list)
         )
-);
-
-named!(pub mtl_lib<&str, ObjLine>,
-    do_parse!(
-        tag!("mtllib") >>
-        space >>
-        lib: complete!(nom::alpha)>>
-        (ObjLine::MtlLib(lib.to_string()))
-    )
 );
 
 named!(pub obj_end<&str, ObjLine>,

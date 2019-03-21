@@ -1,6 +1,6 @@
 [tasks.run]
 command = "cargo"
-args = ["run", "--release"]
+args = ["run"]
 
 [tasks.generate_img]
 command = "convert"

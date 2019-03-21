@@ -14,15 +14,17 @@ use std::mem::swap;
 pub struct Renderer<'a, T> {
     image: &'a mut T,
     z_buffer: Vec<f64>,
+    diffuse: &'a T,
 }
 
 #[allow(dead_code)]
 impl<'a, T: GlobImage> Renderer<'a, T> {
-    pub fn new(image: &'a mut T) -> Self {
+    pub fn new(image: &'a mut T, diffuse: &'a T) -> Self {
         let (width, height) = image.get_size();
         Renderer {
             image,
             z_buffer: vec![f64::MIN; (width * height) as usize],
+            diffuse,
         }
     }
 
@@ -76,10 +78,17 @@ impl<'a, T: GlobImage> Renderer<'a, T> {
         }
     }
 
-    pub fn draw_triangle(&mut self, vert0: &Vec3f, vert1: &Vec3f, vert2: &Vec3f, color: Color) {
+    pub fn draw_triangle(
+        &mut self,
+        vert0: &Vec3f,
+        vert1: &Vec3f,
+        vert2: &Vec3f,
+        texture_mapping: impl Fn(f64, f64, f64) -> (f64, f64),
+        intensity: f64,
+    ) {
         let (width, height) = self.image.get_size();
         let f_width = f64::from(width);
-        let f_height =f64::from(height);
+        let f_height = f64::from(height);
         let x0 = (vert0.x + 1.0) * f_width / 2.0;
         let y0 = (vert0.y + 1.0) * f_height / 2.0;
         let y1 = (vert1.y + 1.0) * f_height / 2.0;
@@ -108,27 +117,42 @@ impl<'a, T: GlobImage> Renderer<'a, T> {
                 let barry_z = vert0.z * l0 + vert1.z * l1 + vert2.z * l2;
 
                 if l0 > 0. && l1 > 0. && l2 > 0. {
+                    let (u, v) = texture_mapping(l0, l1, l2);
+
+                    let (diffuse_width, diffuse_height) = self.diffuse.get_size();
+
+                    let diffuse_x = (u * f64::from(diffuse_width)) as u32;
+                    let diffuse_y = (v * f64::from(diffuse_height)) as u32;
+
+                    let color = self.diffuse.get_pixel(diffuse_x, diffuse_y);
+
+                    let color = (
+                        (f64::from(color.0) / 255.0 * intensity) as u8,
+                        (f64::from(color.1) / 255.0 * intensity) as u8,
+                        (f64::from(color.2) / 255.0 * intensity) as u8,
+                    );
+
                     self.set_deep_pixel(barry_x as u32, y as u32, barry_z, color);
                 }
             }
         }
     }
 
-    pub fn draw_poly(&mut self, vert0: &Vec3f, vert1: &Vec3f, vert2: &Vec3f, color: Color) {
+    pub fn draw_poly(
+        &mut self,
+        vert0: &Vec3f,
+        vert1: &Vec3f,
+        vert2: &Vec3f,
+        texture_mapping: impl Fn(f64, f64, f64) -> (f64, f64)
+    ) {
         let v0 = vert0 - vert1;
         let v1 = vert2 - vert0;
         let n = -v0.cross(&v1).normalize();
 
         let intensity = n.dot(&Vec3f::new(0., 0., 1.));
 
-        let color = (
-            (f64::from(color.0) * intensity) as u8,
-            (f64::from(color.1) * intensity) as u8,
-            (f64::from(color.2) * intensity) as u8,
-        );
-
         if intensity > 0. {
-            self.draw_triangle(vert0, vert1, vert2, color);
+            self.draw_triangle(vert0, vert1, vert2, texture_mapping, intensity);
         }
     }
 }

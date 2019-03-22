@@ -39,15 +39,10 @@ impl GlobImage for PPMImage {
     fn load(filename: &str) -> Self {
         let file = File::open(filename).expect("Can't read file.");
         let reader = BufReader::new(file);
-        let mut data = reader.lines().flat_map(|line| line);
+        let lines: Vec<_> = reader.lines().map(|line| line.unwrap()).collect();
+        let mut data = lines.iter().flat_map(|line| line.split_whitespace());
         // TODO: Бить двумя ногами своё тупое ебало.
-        // let data: Vec<_> = reader
-        //     .lines()
-        //     .map(|line| line.expect("Can't read line."))
-        //     .map(|line2| line2.split_whitespace().collect::<Vec<_>>())
-        //     .flatten()
-        //     .collect();
-        assert_eq!(data.next(), Some(String::from("P3")));
+        assert_eq!(data.next(), Some("P3"));
         let width = data
             .next()
             .map(|el| el.parse::<u32>().expect("Can't parse width."))

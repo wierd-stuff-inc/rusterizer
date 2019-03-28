@@ -84,4 +84,8 @@ impl ObjObject {
     pub fn faces(&self) -> &Vec<ObjLine> {
         &self.faces
     }
+
+    pub fn texture_coords(&self) -> &Vec<ObjLine>{
+        &self.texture_coords
+    }
 }

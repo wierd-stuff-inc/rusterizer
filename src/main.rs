@@ -16,6 +16,7 @@ extern crate quickcheck;
 extern crate rand;
 use crate::parser::obj_line::FaceIndex;
 use crate::parser::obj_line::ObjLine::Face;
+use crate::parser::obj_line::ObjLine::TextureUVW;
 use crate::parser::obj_line::ObjLine::Vertex;
 use crate::structs::image::GlobImage;
 // use crate::structs::types::Vec3f;
@@ -40,6 +41,14 @@ fn main() {
                 _ => None,
             })
             .collect();
+        let texture_coords: Vec<_> = object
+            .texture_coords()
+            .iter()
+            .map(|texture_coord| match texture_coord {
+                TextureUVW(u, v, _) => (u, v),
+                _ => unreachable!(),
+            })
+            .collect();
         for face_line in object.faces() {
             if let Face(face_shit) = face_line {
                 // let size = face_shit.len();
@@ -47,15 +56,29 @@ fn main() {
                 let FaceIndex(fa1, diff1_id, _) = &face_shit[0];
                 let FaceIndex(fb1, diff2_id, _) = &face_shit[1];
                 let FaceIndex(fc1, diff3_id, _) = &face_shit[2];
-                let diff1_id = diff1_id.expect("Can't get texture index.");
-                let diff2_id = diff2_id.expect("Can't get texture index.");
-                let diff3_id = diff3_id.expect("Can't get texture index.");
+                let diff1_id = diff1_id.expect("Can't get texture index.") - 1;
+                let diff2_id = diff2_id.expect("Can't get texture index.") - 1;
+                let diff3_id = diff3_id.expect("Can't get texture index.") - 1;
+                // Мои предки улыбаются, глядя на меня, имперцы.
+                // А ваши улыбаются вам?
+                // (с) Грязевой краб.
 
                 let texture_mapping = |barry_x: f64, barry_y: f64, barry_z: f64| {
-                    (0.0, 0.0)
-                };
+                    let texture_coord_a = texture_coords[diff1_id as usize];
+                    let texture_coord_b = texture_coords[diff2_id as usize];
+                    let texture_coord_c = texture_coords[diff3_id as usize];
 
+                    let u = texture_coord_a.0 * barry_x
+                        + texture_coord_b.0 * barry_y
+                        + texture_coord_c.0 * barry_z;
+                    let v = texture_coord_a.1 * barry_x
+                        + texture_coord_b.1 * barry_y
+                        + texture_coord_c.1 * barry_z;
+
+                    (u, (1.0 - v))
+                };
                 // println!("{:?}", *fb1 as usize);
+
                 if let Some(vert0) = vertices[(*fa1 - 1) as usize] {
                     if let Some(vert1) = vertices[(*fb1 - 1) as usize] {
                         if let Some(vert2) = vertices[(*fc1 - 1) as usize] {

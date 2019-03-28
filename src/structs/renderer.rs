@@ -125,7 +125,6 @@ impl<'a, T: GlobImage> Renderer<'a, T> {
                     let diffuse_y = (v * f64::from(diffuse_height)) as u32;
 
                     let color = self.diffuse.get_pixel(diffuse_x, diffuse_y);
-
                     let color = (
                         (f64::from(color.0) / 255.0 * intensity) as u8,
                         (f64::from(color.1) / 255.0 * intensity) as u8,
@@ -143,13 +142,13 @@ impl<'a, T: GlobImage> Renderer<'a, T> {
         vert0: &Vec3f,
         vert1: &Vec3f,
         vert2: &Vec3f,
-        texture_mapping: impl Fn(f64, f64, f64) -> (f64, f64)
+        texture_mapping: impl Fn(f64, f64, f64) -> (f64, f64),
     ) {
         let v0 = vert0 - vert1;
         let v1 = vert2 - vert0;
         let n = -v0.cross(&v1).normalize();
 
-        let intensity = n.dot(&Vec3f::new(0., 0., 1.));
+        let intensity = n.dot(&Vec3f::new(0., 0., 1.)) * 255.0;
 
         if intensity > 0. {
             self.draw_triangle(vert0, vert1, vert2, texture_mapping, intensity);

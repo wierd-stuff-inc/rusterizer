@@ -16,11 +16,12 @@ extern crate quickcheck;
 extern crate rand;
 use crate::parser::obj_line::FaceIndex;
 use crate::parser::obj_line::ObjLine::Face;
+use crate::parser::obj_line::ObjLine::Normal;
 use crate::parser::obj_line::ObjLine::TextureUVW;
 use crate::parser::obj_line::ObjLine::Vertex;
 use crate::structs::image::GlobImage;
 // use crate::structs::types::Vec3f;
-
+use crate::structs::types::Vec3f;
 use structs::image::PPMImage;
 use structs::Obj;
 use structs::Renderer;
@@ -49,16 +50,28 @@ fn main() {
                 _ => unreachable!(),
             })
             .collect();
+        let obj_normals: Vec<_> = object
+            .normals()
+            .iter()
+            .map(|normal| match normal {
+                Normal(vec) => vec,
+                _ => unreachable!(),
+            })
+            .collect();
         for face_line in object.faces() {
             if let Face(face_shit) = face_line {
                 // let size = face_shit.len();
                 // for v_n in 0..size {
-                let FaceIndex(fa1, diff1_id, _) = &face_shit[0];
-                let FaceIndex(fb1, diff2_id, _) = &face_shit[1];
-                let FaceIndex(fc1, diff3_id, _) = &face_shit[2];
+                let FaceIndex(fa1, diff1_id, normal_index1) = &face_shit[0];
+                let FaceIndex(fb1, diff2_id, normal_index2) = &face_shit[1];
+                let FaceIndex(fc1, diff3_id, normal_index3) = &face_shit[2];
                 let diff1_id = diff1_id.expect("Can't get texture index.") - 1;
                 let diff2_id = diff2_id.expect("Can't get texture index.") - 1;
                 let diff3_id = diff3_id.expect("Can't get texture index.") - 1;
+                let normal_index1 = normal_index1.expect("Can't get normal index") - 1;
+                let normal_index2 = normal_index2.expect("Can't get normal index") - 1;
+                let normal_index3 = normal_index3.expect("Can't get normal index") - 1;
+
                 // Мои предки улыбаются, глядя на меня, имперцы.
                 // А ваши улыбаются вам?
                 // (с) Грязевой краб.
@@ -77,12 +90,25 @@ fn main() {
 
                     (u, (1.0 - v))
                 };
+                let intensity_mapping = |barry_x: f64, barry_y: f64, barry_z: f64| {
+                    let normal1 = obj_normals[normal_index1 as usize];
+                    let normal2 = obj_normals[normal_index2 as usize];
+                    let normal3 = obj_normals[normal_index3 as usize];
+                    let avengers = normal1 * barry_x + normal2 * barry_y + normal3 * barry_z;
+                    255. * (Vec3f::new(0., 0., 1.).dot(&avengers))
+                };
                 // println!("{:?}", *fb1 as usize);
 
                 if let Some(vert0) = vertices[(*fa1 - 1) as usize] {
                     if let Some(vert1) = vertices[(*fb1 - 1) as usize] {
                         if let Some(vert2) = vertices[(*fc1 - 1) as usize] {
-                            renderer.draw_poly(vert0, vert1, vert2, texture_mapping);
+                            renderer.draw_poly(
+                                vert0,
+                                vert1,
+                                vert2,
+                                texture_mapping,
+                                intensity_mapping,
+                            );
                         }
                     }
                 }

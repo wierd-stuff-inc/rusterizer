@@ -1,6 +1,9 @@
 use crate::structs::image::GlobImage;
 use crate::structs::types::Color;
 use crate::structs::types::Point;
+use nalgebra::geometry::Rotation3;
+use nalgebra::Matrix3;
+use nalgebra::Matrix3x4;
 // use std::fmt::Debug;
 
 use crate::structs::types::Vec3f;
@@ -11,36 +14,60 @@ use std::f64;
 use std::mem::swap;
 
 // #[derive(Debug)]
+/// Структурка, чтобы рисовать всяких 3D хлопчиков.
 pub struct Renderer<'a, T> {
     image: &'a mut T,
     z_buffer: Vec<f64>,
     diffuse: &'a T,
+    rotate: Matrix3<f64>,
+    movement: Vec3f,
+}
+
+lazy_static! {
+    static ref KMATRIX: Matrix3<f64> = Matrix3::new(256., 0., 256., 0., 256., 256., 0., 0., 1.);
 }
 
 #[allow(dead_code)]
 impl<'a, T: GlobImage> Renderer<'a, T> {
-    pub fn new(image: &'a mut T, diffuse: &'a T) -> Self {
+    pub fn new(image: &'a mut T, diffuse: &'a T, angles: Vec3f, movement: Vec3f) -> Self {
         let (width, height) = image.get_size();
+        let rotate = Rotation3::from_euler_angles(angles.x, angles.y, angles.z).into_inner();
         Renderer {
             image,
-            z_buffer: vec![f64::MIN; (width * height) as usize],
+            z_buffer: vec![f64::MAX; (width * height) as usize],
             diffuse,
+            rotate,
+            movement,
         }
     }
-
+    /// Сохранить изображение в файл.
+    /// * `filename` -> Имя файла, куда следует сохранить
     pub fn write_to_file(&self, filename: &str) {
         self.image.clone().save(filename);
     }
-
+    /// Выставить цвет пикселя с координатами x, y,
+    /// учитывая значение z-буффера для этой точки.
+    ///
+    /// * `x` - координата по x.
+    /// * `y` - координата по y.
+    /// * `z` - новое значение z-буффера.
+    /// * `color` - цвет точки.
     fn set_deep_pixel(&mut self, x: u32, y: u32, z: f64, color: Color) {
         let (width, height) = self.image.clone().get_size();
         let id = (x + y * width) as usize;
-        if ((id as usize) < ((width * height) as usize)) && (z > self.z_buffer[id]) {
+        if ((id as usize) < ((width * height) as usize)) && (z < self.z_buffer[id]) {
+            // let baba = (((z * 126.) as i32) % 255) as u8;
+            // let tri_babi = (baba, baba, baba);
+            // eprintln!("{:?}", z);
             self.image.draw_pixel(x, y, color);
             self.z_buffer[id] = z;
         }
     }
 
+    /// Нарисовать прямую линию.
+    /// * `start` -> Точка начала линии.
+    /// * `end`   -> Точка конца линии.
+    /// * `color` -> Цвет
     pub fn draw_line(&mut self, start: Point, end: Point, color: Color) {
         let mut steep = false;
 
@@ -78,7 +105,13 @@ impl<'a, T: GlobImage> Renderer<'a, T> {
         }
     }
 
-    pub fn draw_triangle(
+    /// Нарисовать и закрасить некоторый тряухольник.
+    /// * `vert0` -> 3D позиция первой точки.
+    /// * `vert1` -> 3D позиция второй точки.
+    /// * `vert2` -> 3D позиция третьей точки.
+    /// * `texture_mapping` -> Функция для нахождения позиции пикселя с цветом файле текстуры.
+    /// * `intensity_mapping` -> Функция вычисления интенсивности освещения.
+    pub fn draw_poly(
         &mut self,
         vert0: &Vec3f,
         vert1: &Vec3f,
@@ -87,14 +120,18 @@ impl<'a, T: GlobImage> Renderer<'a, T> {
         intensity_mapping: impl Fn(f64, f64, f64) -> f64,
     ) {
         let (width, height) = self.image.get_size();
-        let f_width = f64::from(width);
-        let f_height = f64::from(height);
-        let x0 = (vert0.x + 1.0) * f_width / 2.0;
-        let y0 = (vert0.y + 1.0) * f_height / 2.0;
-        let y1 = (vert1.y + 1.0) * f_height / 2.0;
-        let x1 = (vert1.x + 1.0) * f_width / 2.0;
-        let y2 = (vert2.y + 1.0) * f_height / 2.0;
-        let x2 = (vert2.x + 1.0) * f_width / 2.0;
+        let kk_vert0 = self.rotate * vert0 + self.movement;
+        let kk_vert1 = self.rotate * vert1 + self.movement;
+        let kk_vert2 = self.rotate * vert2 + self.movement;
+        let k_vert0 = (*KMATRIX) * kk_vert0;
+        let x0 = k_vert0.x;
+        let y0 = k_vert0.y;
+        let k_vert1 = (*KMATRIX) * kk_vert1;
+        let x1 = k_vert1.x;
+        let y1 = k_vert1.y;
+        let k_vert2 = (*KMATRIX) * kk_vert2;
+        let x2 = k_vert2.x;
+        let y2 = k_vert2.y;
         let a = Vec3f::new(x0, y0, 0.);
         let b = Vec3f::new(x1, y1, 0.);
         let c = Vec3f::new(x2, y2, 0.);
@@ -102,8 +139,14 @@ impl<'a, T: GlobImage> Renderer<'a, T> {
         let ys = vec![a.y, b.y, c.y];
         let y_min = ys.iter().cloned().fold(f64::MAX, f64::min).floor() as i32;
         let y_max = ys.iter().cloned().fold(f64::MIN, f64::max).ceil() as i32;
+        let y_min = y_min.max(0).min(height as i32);
+        let y_max = y_max.max(0).min(height as i32);
         let x_min = xs.iter().cloned().fold(f64::MAX, f64::min).floor() as i32;
         let x_max = xs.iter().cloned().fold(f64::MIN, f64::max).ceil() as i32;
+        let x_min = x_min.max(0).min(width as i32);
+        let x_max = x_max.max(0).min(width as i32);
+        // eprintln!("{:?}", (y_min, y_max));
+        // eprintln!("{:?}", (x_min, x_max));
         for y in y_min..=y_max {
             let y = f64::from(y);
             for x in x_min..=x_max {
@@ -114,7 +157,7 @@ impl<'a, T: GlobImage> Renderer<'a, T> {
                     / ((y1 - y0) * (x2 - x0) - (x1 - x0) * (y2 - y0));
                 let l2 = 1. - l0 - l1;
 
-                let barry_z = vert0.z * l0 + vert1.z * l1 + vert2.z * l2;
+                let barry_z = k_vert0.z * l0 + k_vert1.z * l1 + k_vert2.z * l2;
 
                 if l0 > 0. && l1 > 0. && l2 > 0. {
                     let (u, v) = texture_mapping(l0, l1, l2);
@@ -132,27 +175,10 @@ impl<'a, T: GlobImage> Renderer<'a, T> {
                             (f64::from(color.1) / 255.0 * intensity) as u8,
                             (f64::from(color.2) / 255.0 * intensity) as u8,
                         );
-
                         self.set_deep_pixel(barry_x as u32, y as u32, barry_z, color);
                     }
                 }
             }
         }
-    }
-
-    pub fn draw_poly(
-        &mut self,
-        vert0: &Vec3f,
-        vert1: &Vec3f,
-        vert2: &Vec3f,
-        texture_mapping: impl Fn(f64, f64, f64) -> (f64, f64),
-        intensity_mapping: impl Fn(f64, f64, f64) -> f64,
-    ) {
-        let v0 = vert0 - vert1;
-        let v1 = vert2 - vert0;
-
-        // let intensity = n.dot(&Vec3f::new(0., 0., 1.)) * 255.0;
-
-        self.draw_triangle(vert0, vert1, vert2, texture_mapping, intensity_mapping);
     }
 }

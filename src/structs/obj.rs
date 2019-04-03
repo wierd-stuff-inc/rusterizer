@@ -9,6 +9,11 @@ pub struct Obj {
 
 #[allow(dead_code)]
 impl Obj {
+    /// Создается объект файла obj .
+    ///
+    ///  Вся херня читается тута.
+    ///
+    /// * `filename` - Имя файла, который надо считать.
     pub fn create(filename: &str) -> Self {
         let mut obj = Obj {
             filename: filename.to_string(),

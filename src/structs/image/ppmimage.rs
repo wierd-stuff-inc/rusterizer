@@ -4,7 +4,7 @@ use std::fs::File;
 use std::io::prelude::*;
 use std::io::BufReader;
 use std::io::BufWriter;
-use std::string::String;
+
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct PPMImage {
@@ -25,17 +25,23 @@ impl PPMImage {
 }
 
 impl GlobImage for PPMImage {
+    /// Закрасить пиксель c коордианатми x и y цветом Color
+    /// * `x` - абсцисса
+    /// * `y` - ордината
+    /// * `color` - Это кортеж из трех интов от 0 до 255
     fn draw_pixel(&mut self, x: u32, y: u32, color: Color) {
         let id = x + y * self.width;
         if (id as usize) < self.data.len() {
             self.data[id as usize] = color;
         }
     }
-
+    /// Узнать размер будущего изображения
+    /// в пикселах
     fn get_size(&self) -> (u32, u32) {
         (self.width, self.height)
     }
-
+    /// Загрузить с диска изображения формата ppm.
+    /// * `file` - имя файла на диске.
     fn load(filename: &str) -> Self {
         let file = File::open(filename).expect("Can't read file.");
         let reader = BufReader::new(file);
@@ -69,19 +75,21 @@ impl GlobImage for PPMImage {
             height,
         }
     }
-
+    /// Узнать цвет пиксела с координатами x и y.
+    /// * `x` - абсцисса
+    /// * `y` - ордината
     fn get_pixel(&self, x: u32, y: u32) -> Color {
         let id = x + y * self.width;
         self.data[id as usize]
     }
-
+    /// Сохранить изображение в файл формата ppm.
+    /// * `file` - имя файла на диске, куда нужно сохранить.
     fn save(self, filename: &str) {
         let file = File::create(filename).expect("Can't open file.");
         let mut buffer = BufWriter::new(file);
         buffer
             .write_fmt(format_args!("P3\n{} {}\n255\n", self.width, self.height))
             .expect("Can't write to file.");
-        // write!(buffer, );
         for i in 0..self.height {
             for j in 0..self.width {
                 if j > 0 {

@@ -165,6 +165,7 @@ named!(pub obj_end<&str, ObjLine>,
     )
 );
 
+/// Распарсить строку и привести в один из перечисленных ниже типов.
 named!(pub parse_obj_line<&str, ObjLine>, alt!(
     parse_obj_name
     | parse_vertex

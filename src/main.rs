@@ -5,6 +5,8 @@ mod structs;
 mod tests;
 #[macro_use]
 extern crate nom;
+#[macro_use]
+extern crate lazy_static;
 
 // use structs::image::GlobImage;
 
@@ -32,7 +34,12 @@ fn main() {
     let suzan = Obj::create("african_head.obj");
     let mut img = PPMImage::new(WIDTH, HEIGHT);
     let diffuse = PPMImage::load("african_head_diffuse.ppm");
-    let mut renderer = Renderer::new(&mut img, &diffuse);
+    let mut renderer = Renderer::new(
+        &mut img,
+        &diffuse,
+        Vec3f::new(0.1, 8.6, 0.6),
+        Vec3f::new(0.1, 0., 1.2),
+    );
     for object in suzan.objects {
         let vertices: Vec<_> = object
             .vertices()

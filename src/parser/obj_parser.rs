@@ -8,6 +8,11 @@ pub struct ObjParser {
 }
 
 impl ObjParser {
+    /// Создается парсер файла obj .
+    ///
+    ///  Вся херня парсится тута.
+    ///
+    /// * `filename` - Имя файла, который надо распарсить .
     pub fn create(filename: &str) -> Self {
         let reader = BufReader::new(File::open(filename).expect("Unable to open file"));
         ObjParser {
@@ -23,7 +28,8 @@ impl ObjParser {
 
 impl Iterator for ObjParser {
     type Item = ObjLine;
-
+    /// Пройтись по каждой строке файла и превратить её в объект типа ObjLine.
+    ///
     fn next(&mut self) -> Option<Self::Item> {
         use std::io::BufRead;
         let mut line = String::new();

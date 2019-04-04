@@ -24,7 +24,7 @@ pub struct Renderer<'a, T> {
 }
 
 lazy_static! {
-    static ref KMATRIX: Matrix3<f64> = Matrix3::new(256., 0., 256., 0., 256., 256., 0., 0., 1.);
+    static ref KMATRIX: Matrix3<f64> = Matrix3::new(1024., 0., 256., 0., -1024., 256., 0., 0., 1.);
 }
 
 #[allow(dead_code)]
@@ -34,7 +34,7 @@ impl<'a, T: GlobImage> Renderer<'a, T> {
         let rotate = Rotation3::from_euler_angles(angles.x, angles.y, angles.z).into_inner();
         Renderer {
             image,
-            z_buffer: vec![f64::MAX; (width * height) as usize],
+            z_buffer: vec![f64::MIN; (width * height) as usize],
             diffuse,
             rotate,
             movement,
@@ -55,7 +55,7 @@ impl<'a, T: GlobImage> Renderer<'a, T> {
     fn set_deep_pixel(&mut self, x: u32, y: u32, z: f64, color: Color) {
         let (width, height) = self.image.clone().get_size();
         let id = (x + y * width) as usize;
-        if ((id as usize) < ((width * height) as usize)) && (z < self.z_buffer[id]) {
+        if ((id as usize) < ((width * height) as usize)) && (z > self.z_buffer[id]) {
             // let baba = (((z * 126.) as i32) % 255) as u8;
             // let tri_babi = (baba, baba, baba);
             // eprintln!("{:?}", z);
@@ -124,14 +124,14 @@ impl<'a, T: GlobImage> Renderer<'a, T> {
         let kk_vert1 = self.rotate * vert1 + self.movement;
         let kk_vert2 = self.rotate * vert2 + self.movement;
         let k_vert0 = (*KMATRIX) * kk_vert0;
-        let x0 = k_vert0.x;
-        let y0 = k_vert0.y;
+        let x0 = k_vert0.x / k_vert0.z;
+        let y0 = k_vert0.y / k_vert0.z;
         let k_vert1 = (*KMATRIX) * kk_vert1;
-        let x1 = k_vert1.x;
-        let y1 = k_vert1.y;
+        let x1 = k_vert1.x / k_vert1.z;
+        let y1 = k_vert1.y / k_vert1.z;
         let k_vert2 = (*KMATRIX) * kk_vert2;
-        let x2 = k_vert2.x;
-        let y2 = k_vert2.y;
+        let x2 = k_vert2.x / k_vert2.z;
+        let y2 = k_vert2.y / k_vert2.z;
         let a = Vec3f::new(x0, y0, 0.);
         let b = Vec3f::new(x1, y1, 0.);
         let c = Vec3f::new(x2, y2, 0.);

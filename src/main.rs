@@ -37,8 +37,8 @@ fn main() {
     let mut renderer = Renderer::new(
         &mut img,
         &diffuse,
-        Vec3f::new(0.1, 8.6, 0.6),
-        Vec3f::new(0.1, 0., 1.2),
+        Vec3f::new(0., 0., 0.),
+        Vec3f::new(0., 0., -8.),
     );
     for object in suzan.objects {
         let vertices: Vec<_> = object
